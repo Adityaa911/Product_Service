@@ -1,6 +1,9 @@
 package com.example.microservice_product.ProductController;
 
+import com.example.microservice_product.Commons.AutheticationCommon;
 import com.example.microservice_product.Dtos.CreateProductRequestDto;
+import com.example.microservice_product.Dtos.UserDto;
+import com.example.microservice_product.Exceptions.InvalidTokenException;
 import com.example.microservice_product.Models.Category;
 import com.example.microservice_product.Models.Product;
 import com.example.microservice_product.ProductService.ProductService;
@@ -14,8 +17,11 @@ import java.util.Optional;
 public class ProductController {
 
     private ProductService productService;
+    private AutheticationCommon autheticationCommon;
 
-    public ProductController(@Qualifier("OwnProductService") ProductService productService){
+    public ProductController(@Qualifier("OwnProductService") ProductService productService,AutheticationCommon autheticationCommon){
+        this
+                .autheticationCommon=autheticationCommon;
         this.productService=productService;
     }
 
@@ -24,15 +30,22 @@ public class ProductController {
       return productService. GetAllProduct();
     }
 
-    @GetMapping("/Products/{id}")
-    public Optional<Product> GetSingleProduct(@PathVariable("id") Long ProductId){
+
+    @GetMapping("/Products/{id}/{token}")
+    public Optional<Product> GetSingleProduct(@PathVariable("id")Long ProductId,@PathVariable("token") String token) throws InvalidTokenException {
+
+        UserDto userDto = autheticationCommon.validateToken(token);
+        if(userDto==null){
+            throw new InvalidTokenException("this is invalid token and please login before for further process");
+        }
         return productService.GetSingleProduct(ProductId);
     }
 
     @GetMapping("/products/categories")
-    public List<Category>  GetAllCategory(){
+    public List<Category>  GetAllCategory() {
          return productService.GetAllCategory();
     }
+
     @GetMapping("/products/categories/{category}")
     public List<Product> GetAllProductsByCategory(@PathVariable ("category") String category){
           return productService.GetAllProductsByCategory(category);
@@ -55,7 +68,7 @@ public class ProductController {
                 request.getImage(),
                 request.getCategory(),
                 request.getPrice()
-        );
+         );
 
     }
     @DeleteMapping("ProductId")
